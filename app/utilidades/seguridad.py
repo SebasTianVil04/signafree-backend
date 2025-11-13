@@ -6,24 +6,21 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 import hashlib
+import bcrypt as bcrypt_lib  # Importar bcrypt directamente
 
 from .configuracion import configuracion
 from .base_datos import obtener_bd
 from ..modelos.usuario import Usuario
 
-# Configuración de contraseñas
+# Configuración de contraseñas - Usar bcrypt directamente
 contexto_password = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Configuración de tokens
 security = HTTPBearer()
 
-# Constante para límite de bcrypt
-MAX_PASSWORD_LENGTH = 72
-
-
 def obtener_hash_password(password: str) -> str:
     """
-    Genera el hash de una contraseña usando bcrypt
+    Genera el hash de una contraseña usando bcrypt de forma directa
     """
     try:
         print(f"\n{'='*60}")
@@ -31,14 +28,18 @@ def obtener_hash_password(password: str) -> str:
         print(f"{'='*60}")
         print(f"1. Contraseña original: {len(password)} caracteres, {len(password.encode('utf-8'))} bytes")
         
-        # Verificar si la contraseña es demasiado larga para bcrypt
-        if len(password.encode('utf-8')) > MAX_PASSWORD_LENGTH:
-            print("ADVERTENCIA: Contraseña demasiado larga, truncando...")
-            password = password[:MAX_PASSWORD_LENGTH]
+        # SOLUCIÓN: Usar bcrypt directamente en lugar de passlib
+        # Codificar la contraseña a bytes
+        password_bytes = password.encode('utf-8')
         
-        # Hash directo con bcrypt (más seguro)
-        bcrypt_hash = contexto_password.hash(password)
-        print(f"2. Hash Bcrypt: {len(bcrypt_hash)} caracteres, {len(bcrypt_hash.encode('utf-8'))} bytes")
+        # Generar salt y hash con bcrypt
+        salt = bcrypt_lib.gensalt()
+        hashed = bcrypt_lib.hashpw(password_bytes, salt)
+        
+        # Convertir a string para almacenar
+        bcrypt_hash = hashed.decode('utf-8')
+        
+        print(f"2. Hash Bcrypt generado: {len(bcrypt_hash)} caracteres")
         print(f"   Primeros 30 chars: {bcrypt_hash[:30]}...")
         print(f" Hash generado exitosamente")
         print(f"{'='*60}\n")
@@ -61,12 +62,18 @@ def verificar_password(password_plano: str, password_hash: str) -> bool:
     """
     try:
         # Verificación directa con bcrypt
-        return contexto_password.verify(password_plano, password_hash)
+        password_bytes = password_plano.encode('utf-8')
+        hash_bytes = password_hash.encode('utf-8')
+        return bcrypt_lib.checkpw(password_bytes, hash_bytes)
     except Exception as e:
         print(f" Error al verificar contraseña: {str(e)}")
-        return False
+        # Fallback a passlib si bcrypt directo falla
+        try:
+            return contexto_password.verify(password_plano, password_hash)
+        except:
+            return False
 
-
+# El resto del código permanece igual...
 def crear_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     """Crear token JWT"""
     to_encode = data.copy()
@@ -78,7 +85,6 @@ def crear_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, configuracion.secret_key, algorithm=configuracion.algorithm)
     return encoded_jwt
-
 
 def verificar_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Verificar y decodificar token JWT"""
@@ -103,7 +109,6 @@ def verificar_token(credentials: HTTPAuthorizationCredentials = Depends(security
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-
 def obtener_usuario_actual(
     email: str = Depends(verificar_token),
     bd: Session = Depends(obtener_bd)
@@ -122,7 +127,6 @@ def obtener_usuario_actual(
         )
     return usuario
 
-
 def verificar_admin(usuario_actual: Usuario = Depends(obtener_usuario_actual)):
     """Verificar si el usuario es administrador"""
     if not usuario_actual.es_admin:
@@ -131,7 +135,6 @@ def verificar_admin(usuario_actual: Usuario = Depends(obtener_usuario_actual)):
             detail="No tienes permisos de administrador"
         )
     return usuario_actual
-
 
 def verificar_token_admin(
     credentials: HTTPAuthorizationCredentials = Depends(security),
