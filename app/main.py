@@ -8,6 +8,8 @@ import sys
 
 from app.utilidades.configuracion import configuracion
 from app.utilidades.base_datos import crear_tablas
+from app.utilidades.ffmpeg_config import verificar_ffmpeg
+verificar_ffmpeg()
 
 print("Importando routers...")
 try:

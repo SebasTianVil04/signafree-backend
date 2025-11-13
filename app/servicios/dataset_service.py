@@ -1,5 +1,6 @@
 import os
 import cv2
+import imageio_ffmpeg
 import numpy as np
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -15,6 +16,7 @@ import time
 
 from ..modelos.dataset import CategoriaDataset, VideoDataset
 from ..servicios.config_tipo_senas import detectar_tipo_sena, obtener_config_sena
+os.environ['FFMPEG_BINARY'] = imageio_ffmpeg.get_ffmpeg_exe()
 
 logger = logging.getLogger(__name__)
 
