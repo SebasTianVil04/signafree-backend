@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 set -o errexit
 
-echo "📦 Instalando dependencias Python..."
-pip install --upgrade pip
+echo "📦 Actualizando pip..."
+pip install --upgrade pip setuptools wheel
+
+echo "📚 Instalando dependencias Python..."
 pip install -r requirements.txt
 
 echo "🎬 Instalando FFmpeg..."
 # Crear directorio para binarios
 mkdir -p $HOME/bin
-cd $HOME/bin
 
 # Descargar FFmpeg estático
+cd $HOME/bin
 wget -q https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
-
-# Extraer
 tar -xf ffmpeg-release-amd64-static.tar.xz
 
 # Mover binarios
@@ -24,13 +24,13 @@ chmod +x ffmpeg ffprobe
 # Limpiar
 rm -rf ffmpeg-release-amd64-static.tar.xz ffmpeg-*-amd64-static
 
-# Verificar
+# Verificar instalación
 ./ffmpeg -version
 
-echo "📁 Creando directorios..."
+echo "📁 Creando directorios del proyecto..."
 cd /opt/render/project/src
 mkdir -p archivos_subidos/temp
-mkdir -p logs  
+mkdir -p logs
 mkdir -p modelos_entrenados
 
-echo "✅ Build completado"
+echo "✅ Build completado exitosamente"
