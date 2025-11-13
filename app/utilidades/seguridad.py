@@ -23,24 +23,22 @@ MAX_PASSWORD_LENGTH = 72
 
 def obtener_hash_password(password: str) -> str:
     """
-    Genera el hash de una contraseña usando bcrypt con pre-hash SHA256
-    para manejar contraseñas largas de forma segura
+    Genera el hash de una contraseña usando bcrypt
     """
     try:
-        #  LOGS DETALLADOS
         print(f"\n{'='*60}")
         print(f" GENERANDO HASH DE CONTRASEÑA")
         print(f"{'='*60}")
         print(f"1. Contraseña original: {len(password)} caracteres, {len(password.encode('utf-8'))} bytes")
         
-        # Pre-hash con SHA256
-        password_prehash = hashlib.sha256(password.encode('utf-8')).hexdigest()
-        print(f"2. Pre-hash SHA256: {len(password_prehash)} caracteres, {len(password_prehash.encode('utf-8'))} bytes")
-        print(f"   Primeros 20 chars: {password_prehash[:20]}...")
+        # Verificar si la contraseña es demasiado larga para bcrypt
+        if len(password.encode('utf-8')) > MAX_PASSWORD_LENGTH:
+            print("ADVERTENCIA: Contraseña demasiado larga, truncando...")
+            password = password[:MAX_PASSWORD_LENGTH]
         
-        # Hash con bcrypt
-        bcrypt_hash = contexto_password.hash(password_prehash)
-        print(f"3. Hash Bcrypt: {len(bcrypt_hash)} caracteres, {len(bcrypt_hash.encode('utf-8'))} bytes")
+        # Hash directo con bcrypt (más seguro)
+        bcrypt_hash = contexto_password.hash(password)
+        print(f"2. Hash Bcrypt: {len(bcrypt_hash)} caracteres, {len(bcrypt_hash.encode('utf-8'))} bytes")
         print(f"   Primeros 30 chars: {bcrypt_hash[:30]}...")
         print(f" Hash generado exitosamente")
         print(f"{'='*60}\n")
@@ -57,16 +55,13 @@ def obtener_hash_password(password: str) -> str:
         print(f"{'='*60}\n")
         raise
 
-
 def verificar_password(password_plano: str, password_hash: str) -> bool:
     """
     Verifica si una contraseña plana coincide con su hash
-    usando el mismo pre-hash SHA256
     """
     try:
-        # Aplicar el mismo pre-hash antes de verificar
-        password_prehash = hashlib.sha256(password_plano.encode('utf-8')).hexdigest()
-        return contexto_password.verify(password_prehash, password_hash)
+        # Verificación directa con bcrypt
+        return contexto_password.verify(password_plano, password_hash)
     except Exception as e:
         print(f" Error al verificar contraseña: {str(e)}")
         return False
